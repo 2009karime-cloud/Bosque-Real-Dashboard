@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bosque Real · Dashboard Comercial</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#F6F7F3;--card:#FFFFFF;--ink:#0B1F17;--muted:#667066;--line:#DFE5DD;
+      --green:#123B2A;--green2:#1F6B46;--green3:#35A66B;--gold:#B8974B;
+      --red:#B94A3E;--amber:#BF8E2F;--soft:#EEF3EC;
+      --shadow:0 12px 30px rgba(11,31,23,.08);--radius:22px;
+      --font:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+      --serif:Georgia,"Times New Roman",serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(900px 420px at 100% -10%,rgba(53,166,107,.10),transparent 60%),var(--bg);color:var(--ink);font-family:var(--font)}
+    button,input,textarea,select{font-family:inherit}
+    button{cursor:pointer}
+    .hidden{display:none!important}
+    .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#081C14,#123B2A)}
+    .login-card{width:min(430px,100%);background:white;border-radius:28px;padding:34px;box-shadow:0 25px 80px rgba(0,0,0,.25)}
+    .logo{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,#D8C18A,#B8974B);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;margin-bottom:18px}
+    h1{font-family:var(--serif);font-weight:500;margin:0;font-size:30px}
+    .login-card p{color:var(--muted);margin:8px 0 26px;font-size:14px}
+    label{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 7px}
+    input,textarea,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:#FBFCFA;color:var(--ink);font-size:14px}
+    textarea{min-height:90px;resize:vertical}
+    .field{margin-bottom:14px}
+    .btn{border:0;border-radius:12px;padding:12px 16px;font-weight:700;font-size:14px}
+    .btn-primary{background:var(--green);color:white}
+    .btn-secondary{background:var(--soft);color:var(--green);border:1px solid var(--line)}
+    .btn-small{padding:8px 11px;font-size:12px;border-radius:10px}
+    .error{background:rgba(185,74,62,.1);color:var(--red);border:1px solid rgba(185,74,62,.25);padding:10px;border-radius:12px;font-size:13px;margin-top:10px}
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    aside{background:linear-gradient(180deg,#081C14,#123B2A);color:white;padding:24px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:22px}
+    .brand{border-bottom:1px solid rgba(255,255,255,.10);padding-bottom:18px}
+    .brand .name{font-family:var(--serif);font-size:20px;letter-spacing:.03em}
+    .brand .sub{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#D8C18A;margin-top:4px}
+    .userbox{display:flex;gap:12px;align-items:center}
+    .avatar{width:38px;height:38px;border-radius:50%;background:#D8C18A;color:#081C14;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700}
+    .userbox .u{font-weight:700;font-size:14px}.userbox .r{font-size:12px;color:rgba(255,255,255,.55)}
+    nav{display:flex;flex-direction:column;gap:6px}
+    nav button,.switch button{all:unset;cursor:pointer;padding:11px 12px;border-radius:12px;color:rgba(255,255,255,.68);font-size:14px}
+    nav button.active,.switch button.active{background:rgba(53,166,107,.16);color:#54D28D;font-weight:700}
+    .switch{display:flex;flex-direction:column;gap:6px;border-bottom:1px solid rgba(255,255,255,.10);padding-bottom:14px}
+    .logout{margin-top:auto;background:transparent;color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px}
+    main{padding:30px 38px 60px;max-width:1240px;width:100%}
+    .top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px}
+    .top h2{font-family:var(--serif);font-weight:500;font-size:32px;margin:0}
+    .top p{margin:5px 0 0;color:var(--muted)}
+    .pill{display:inline-flex;gap:8px;align-items:center;background:white;border:1px solid var(--line);border-radius:999px;padding:10px 14px;box-shadow:var(--shadow);font-size:13px;color:var(--muted)}
+    .review{background:#FFF8E8;border:1px solid rgba(184,151,75,.35);padding:12px 16px;border-radius:16px;margin-bottom:18px;color:#5C4A21}
+    .grid{display:grid;gap:18px}
+    .g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.hero{grid-template-columns:320px 1fr}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+    .card-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;margin:0 0 16px;display:flex;justify-content:space-between;align-items:center}
+    .score{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .ring{width:190px;height:190px;border-radius:50%;background:conic-gradient(var(--green3) var(--deg),#E4EAE1 0);display:grid;place-items:center;margin:8px auto 14px}
+    .ring-inner{width:154px;height:154px;background:white;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .ring-inner .num{font-family:var(--serif);font-size:42px}.ring-inner .lbl{font-size:12px;color:var(--muted);text-transform:uppercase}
+    .status{border-radius:999px;padding:8px 13px;font-weight:800;font-size:13px}
+    .green{background:rgba(53,166,107,.12);color:var(--green2)}.yellow{background:rgba(191,142,47,.13);color:var(--amber)}.red{background:rgba(185,74,62,.12);color:var(--red)}
+    .activities{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .activity{border:1px solid var(--line);background:#FBFCFA;border-radius:16px;padding:13px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .activity.done{border-color:rgba(53,166,107,.45);background:rgba(53,166,107,.07)}
+    .act-main{display:flex;gap:10px;align-items:center;min-width:0}.check{width:22px;height:22px;border-radius:7px;border:1.5px solid #C9D2C6;display:grid;place-items:center;flex:0 0 auto}.done .check{background:var(--green3);border-color:var(--green3);color:white}
+    .act-title{font-weight:700;font-size:13px}.act-sub{font-size:11px;color:var(--muted);margin-top:2px}
+    .counter{display:flex;gap:7px;align-items:center}.counter button{width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:white;font-weight:900}.counter span{min-width:42px;text-align:center;font-family:var(--serif);font-weight:700}
+    .bar{height:11px;border-radius:999px;background:#E4EAE1;overflow:hidden}.bar>div{height:100%;background:linear-gradient(90deg,var(--green),var(--green3));width:0%}
+    .stat .n{font-family:var(--serif);font-size:30px}.stat .l{color:var(--muted);font-size:13px}
+    .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .kpi-grid input{font-family:var(--serif);font-size:18px}
+    table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;font-size:13px}th{color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.06em}td input{padding:8px}
+    .cal{display:grid;grid-template-columns:90px repeat(5,1fr);gap:7px}.cal div{font-size:12px}.cal select{font-size:12px;padding:8px}
+    .coach-item{border:1px solid var(--line);border-radius:14px;padding:12px;background:#FBFCFA;margin-bottom:10px}.coach-item .meta{font-size:11px;color:var(--muted);margin-top:6px}
+    .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#081C14;color:white;padding:13px 18px;border-radius:14px;box-shadow:var(--shadow);opacity:0;transition:.25s;z-index:99}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(max-width:900px){.app{grid-template-columns:1fr}aside{height:auto;position:relative}.hero,.g2,.g3{grid-template-columns:1fr}.activities,.kpi-grid{grid-template-columns:1fr}main{padding:20px}.top{flex-direction:column}.cal{grid-template-columns:70px repeat(5,1fr);overflow:auto}}
+  </style>
+</head>
+<body>
+  <section id="login" class="login">
+    <div class="login-card">
+      <div class="logo">BR</div>
+      <h1>Panel Comercial</h1>
+      <p>Inicia sesión para registrar y dar seguimiento a la actividad del Q.</p>
+      <form id="loginForm">
+        <div class="field"><label>Correo</label><input id="email" type="email" required placeholder="correo@bosquereal.com.mx"/></div>
+        <div class="field"><label>Contraseña</label><input id="password" type="password" required placeholder="••••••••"/></div>
+        <button class="btn btn-primary" style="width:100%" type="submit">Entrar</button>
+        <div id="loginError" class="error hidden"></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="app" class="app hidden">
+    <aside>
+      <div class="brand"><div class="logo">BR</div><div class="name">Bosque Real</div><div class="sub">Dashboard Comercial</div></div>
+      <div class="userbox"><div class="avatar" id="avatar">K</div><div><div class="u" id="userName">Karime</div><div class="r" id="userRole">Dashboard</div></div></div>
+      <div id="switch" class="switch hidden">
+        <button class="view-user active" data-user="karime">Mi dashboard</button>
+        <button class="view-user" data-user="alan">Dashboard de Allan</button>
+      </div>
+      <nav>
+        <button class="nav active" data-view="hoy">Hoy</button>
+        <button class="nav" data-view="quarter">Quarter</button>
+        <button class="nav" data-view="calendario">Calendario</button>
+        <button class="nav" data-view="coaching">Coaching</button>
+      </nav>
+      <button id="logout" class="logout">Cerrar sesión</button>
+    </aside>
+
+    <main>
+      <div class="top">
+        <div><h2 id="title">Buenos días</h2><p id="subtitle">Actividad comercial de hoy</p></div>
+        <div class="pill" id="todayPill">—</div>
+      </div>
+      <div id="review" class="review hidden">Estás viendo el dashboard de Allan en modo revisión. No puedes modificar sus datos.</div>
+
+      <section id="view-hoy">
+        <div class="grid hero" style="margin-bottom:18px">
+          <div class="card score">
+            <p class="card-title" style="width:100%">Puntos de hoy</p>
+            <div class="ring" id="ring" style="--deg:0deg"><div class="ring-inner"><div class="num" id="points">0</div><div class="lbl">de 100 pts</div></div></div>
+            <div id="status" class="status red">Rojo · Acelera</div>
+          </div>
+          <div class="card">
+            <p class="card-title">Actividades de hoy <span id="doneCount">0/0</span></p>
+            <div id="activities" class="activities"></div>
+          </div>
+        </div>
+
+        <div class="grid g2" style="margin-bottom:18px">
+          <div class="card">
+            <p class="card-title">KPIs del día</p>
+            <div id="kpis" class="kpi-grid"></div>
+          </div>
+          <div class="card">
+            <p class="card-title">Prioridades y alertas</p>
+            <div class="field"><label>Prioridad 1</label><input id="prio0" placeholder="Lo más importante de hoy"/></div>
+            <div class="field"><label>Prioridad 2</label><input id="prio1" placeholder="Segunda prioridad"/></div>
+            <div class="field"><label>Prioridad 3</label><input id="prio2" placeholder="Tercera prioridad"/></div>
+            <div id="alerts"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="card-title">Conversión por origen</p>
+          <div style="overflow:auto"><table id="origins"></table></div>
+        </div>
+      </section>
+
+      <section id="view-quarter" class="hidden">
+        <div class="grid g3" style="margin-bottom:18px">
+          <div class="card stat"><div class="n" id="qPoints">0</div><div class="l">Puntos del Q</div></div>
+          <div class="card stat"><div class="n" id="qAvg">0</div><div class="l">Promedio diario</div></div>
+          <div class="card stat"><div class="n" id="qStreak">0</div><div class="l">Racha días meta</div></div>
+        </div>
+        <div class="card" style="margin-bottom:18px">
+          <p class="card-title">Meta de ventas Q3 · $37.5 MDP</p>
+          <div class="grid g2">
+            <div class="field"><label>Ventas capturadas</label><input id="salesAmount" type="number" min="0"/></div>
+            <div class="field"><label>Meta trimestral</label><input value="37500000" disabled/></div>
+          </div>
+          <div class="bar"><div id="salesBar"></div></div>
+          <p id="salesText" style="color:var(--muted);font-size:13px"></p>
+        </div>
+        <div class="card">
+          <p class="card-title">Resumen comercial</p>
+          <div id="summaryStats" class="grid g3"></div>
+        </div>
+      </section>
+
+      <section id="view-calendario" class="hidden">
+        <div class="card">
+          <p class="card-title">Calendario semanal</p>
+          <div id="calendar" class="cal"></div>
+        </div>
+      </section>
+
+      <section id="view-coaching" class="hidden">
+        <div class="grid g2">
+          <div class="card">
+            <p class="card-title">Notas de coaching</p>
+            <div id="coachList"></div>
+          </div>
+          <div class="card" id="coachFormCard">
+            <p class="card-title">Agregar comentario para Allan</p>
+            <div class="field"><label>Comentario</label><textarea id="coachText" placeholder="Ej. Buen avance, reforzar seguimiento telefónico."></textarea></div>
+            <button id="addCoach" class="btn btn-primary">Agregar comentario</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://gnuxvifogzhxjxbbfpmr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_LVvmeP3JWnC5ZLf-0MEu0A_7A6jzkVg';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const USERS = {
+  karime:{name:'Karime Braña', initial:'K'},
+  alan:{name:'Allan Sentíes', initial:'A'}
+};
+const DAILY_GOAL = 100;
+const Q_GOAL = 37500000;
+const KPI_FIELDS = [
+  ['llamadas','Llamadas realizadas'],['contactos','Contactos efectivos'],['citasAgendadas','Citas agendadas'],
+  ['citasRealizadas','Citas realizadas'],['corridas','Corridas enviadas'],['seguimientos','Seguimientos realizados'],
+  ['whatsapps','WhatsApps enviados'],['apartados','Apartados'],['ventas','Ventas cerradas']
+];
+const ORIGINS = ['NXT GEN','Marketing','IBR','Producción directa','Elite','Brokers'];
+const ORIGIN_FIELDS = ['Citas agendadas','Citas realizadas','Corridas','Apartados','Ventas','Monto'];
+const ACTIVITIES = {
+  karime:[
+    ['llamada_frio','Llamadas en frío',2,'counter',15],['whatsapp_seg','WhatsApps de seguimiento',1,'counter',8],
+    ['referido','Pedir un referido',10,'check'],['cita_realizada','Cita realizada',15,'check'],
+    ['capacitacion','Capacitación constante',8,'check'],['llamada_efectiva','Llamada efectiva realizada',3,'counter',5],
+    ['cita_embaj','Cita con embajador',15,'check'],['seg_tel','Seguimiento telefónico',2,'counter',8],
+    ['crm','Actualizar CRM',7,'check'],['cita_agendada','Cita agendada',15,'check'],['planeacion','Planeación del día',10,'check'],
+    ['curva_fin','Curva financiera enviada',15,'check'],['llamada_embaj','Llamada a embajador',3,'counter',3],
+    ['seg_embaj','Seguimiento a embajadores',2,'counter',3],['llamada_lider','Llamada con líder de equipo',8,'check'],
+    ['video_gc','Videos de Grant Cardone',5,'check'],['role_play','Role Play',8,'check'],
+    ['seg_creativo','Seguimiento creativo visual',3,'counter',3],['propuesta_fin','Propuesta financiera aprobada',15,'check'],
+    ['apartado','Apartado logrado',20,'check'],['reactivacion','Reactivación de clientes',4,'counter',5]
+  ],
+  alan:[
+    ['cita_origen','Cita realizada origen',15,'check'],['cita_pd','Cita realizada PD',15,'check'],
+    ['cita_agendada_pd','Cita agendada PD',12,'check'],['cita_seguimiento','Cita de seguimiento',8,'check'],
+    ['llamada_frio','Llamadas en frío',2,'counter',15],['reactivacion','Reactivación de clientes',4,'counter',5],
+    ['cita_embaj','Cita con embajador',15,'counter',1],['llamada_lider','Llamada de seguimiento con líder de equipo',8,'check'],
+    ['llamada_seguimiento','Llamada de seguimiento',7,'check'],['apartado','Apartado logrado',20,'check'],
+    ['propuesta_fin','Propuesta financiera aprobada',15,'check'],['seg_creativo','Seguimiento creativo visual',8,'check'],
+    ['video_gc','Videos de Grant Cardone',5,'counter',2],['role_play','Role Play',8,'check']
+  ]
+};
+const CAL_OPTIONS=['','Prospección','Seguimientos','Citas','CRM / Pipeline','Embajadores','Capacitación','Planeación','Administración'];
+const CAL_DAYS=['Lun','Mar','Mié','Jue','Vie'];
+const CAL_TIMES=['8:30','9:30','10:30','11:30','12:30','13:30','15:00','16:00','17:00','18:00'];
+
+let authUser=null, myRole=null, viewing='karime', state=null, profiles={}, cache={};
+
+function todayKey(d=new Date()){return d.toISOString().slice(0,10)}
+function defaultState(){return {days:{}, calendar:{}, sales:{amount:0}, coaching:[]}}
+function ensureDay(){const k=todayKey(); if(!state.days[k]) state.days[k]={acts:{},counts:{},kpis:{},priorities:['','',''],origins:{}}; return state.days[k]}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500)}
+function money(n){return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}).format(n||0)}
+function pointsFor(day=ensureDay()){return ACTIVITIES[viewing].reduce((s,a)=>s+(a[3]=='counter'?((day.counts[a[0]]||0)*a[2]):(day.acts[a[0]]?a[2]:0)),0)}
+function doneCount(day=ensureDay()){return ACTIVITIES[viewing].filter(a=>a[3]=='counter'?(day.counts[a[0]]||0)>=(a[4]||1):day.acts[a[0]]).length}
+function isReadonly(){return myRole==='karime' && viewing==='alan'}
+
+async function loadProfiles(){
+  const {data,error}=await sb.from('profiles').select('id,role,name');
+  if(error) throw error;
+  profiles={}; data.forEach(p=>profiles[p.role]=p);
+}
+async function loadState(role){
+  if(cache[role]) return cache[role];
+  const uid=profiles[role]?.id;
+  const {data,error}=await sb.from('app_state').select('state').eq('user_id',uid).single();
+  let s = (!error && data?.state) ? data.state : defaultState();
+  s.days=s.days||{}; s.calendar=s.calendar||{}; s.sales=s.sales||{amount:0}; s.coaching=s.coaching||[];
+  cache[role]=s; return s;
+}
+let saveTimer=null;
+function save(){
+  if(isReadonly()) return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    await sb.from('app_state').upsert({user_id:profiles[viewing].id,state,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  },350);
+}
+async function switchViewing(role){
+  viewing=role; state=await loadState(role);
+  document.querySelectorAll('.view-user').forEach(b=>b.classList.toggle('active',b.dataset.user===role));
+  renderAll();
+}
+async function initApp(session){
+  authUser=session.user;
+  await loadProfiles();
+  const profile=Object.values(profiles).find(p=>p.id===authUser.id);
+  myRole=profile?.role;
+  if(!myRole) throw new Error('Tu usuario no está conectado a un perfil.');
+  viewing=myRole;
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  if(myRole==='karime') document.getElementById('switch').classList.remove('hidden');
+  await switchViewing(viewing);
+}
+document.getElementById('loginForm').addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const err=document.getElementById('loginError'); err.classList.add('hidden');
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){err.textContent='No pudimos iniciar sesión: '+error.message; err.classList.remove('hidden'); return;}
+  try{await initApp(data.session)}catch(ex){err.textContent=ex.message; err.classList.remove('hidden');}
+});
+document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();location.reload()}
+
+document.querySelectorAll('.nav').forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll('.nav').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  ['hoy','quarter','calendario','coaching'].forEach(v=>document.getElementById('view-'+v).classList.toggle('hidden',v!==btn.dataset.view));
+  renderAll();
+});
+document.querySelectorAll('.view-user').forEach(btn=>btn.onclick=()=>switchViewing(btn.dataset.user));
+
+function renderAll(){
+  const u=USERS[viewing]; const readonly=isReadonly();
+  document.getElementById('avatar').textContent=USERS[myRole]?.initial||'U';
+  document.getElementById('userName').textContent=USERS[myRole]?.name||'Usuario';
+  document.getElementById('userRole').textContent=myRole==='karime'?'Vista Karime':'Vista Allan';
+  document.getElementById('title').textContent=(new Date().getHours()<12?'Buenos días':'Buenas tardes')+', '+u.name.split(' ')[0];
+  document.getElementById('subtitle').textContent='Dashboard de '+u.name;
+  document.getElementById('todayPill').textContent=new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('review').classList.toggle('hidden',!readonly);
+  renderActivities(); renderKPIs(); renderPriorities(); renderOrigins(); renderQuarter(); renderCalendar(); renderCoaching(); renderAlerts();
+  document.querySelectorAll('input,select,textarea,button').forEach(el=>{
+    if(el.id==='logout'||el.classList.contains('nav')||el.classList.contains('view-user')||el.closest('#loginForm')) return;
+  });
+}
+function renderActivities(){
+  const d=ensureDay(), wrap=document.getElementById('activities'); wrap.innerHTML='';
+  ACTIVITIES[viewing].forEach(a=>{
+    const [id,t,p,type,goal]=a; const isCounter=type==='counter'; const val=d.counts[id]||0; const done=isCounter?val>=goal:!!d.acts[id];
+    const el=document.createElement('div'); el.className='activity '+(done?'done':'');
+    el.innerHTML=`<div class="act-main"><div class="check">${done?'✓':''}</div><div><div class="act-title">${t}</div><div class="act-sub">${isCounter?val+'/'+goal+' · ':''}${p} pts ${isCounter?'c/u':''}</div></div></div>`;
+    if(isCounter){
+      const c=document.createElement('div'); c.className='counter';
+      c.innerHTML=`<button>-</button><span>${val}</span><button>+</button>`;
+      c.children[0].onclick=()=>{if(isReadonly())return toast('Modo revisión.'); d.counts[id]=Math.max(0,(d.counts[id]||0)-1); save(); renderAll();}
+      c.children[2].onclick=()=>{if(isReadonly())return toast('Modo revisión.'); d.counts[id]=(d.counts[id]||0)+1; save(); renderAll();}
+      el.appendChild(c);
+    } else {
+      el.onclick=()=>{if(isReadonly())return toast('Modo revisión.'); d.acts[id]=!d.acts[id]; save(); renderAll();}
+    }
+    wrap.appendChild(el);
+  });
+  const pts=pointsFor(d), pct=Math.min(pts/DAILY_GOAL,1);
+  document.getElementById('points').textContent=pts;
+  document.getElementById('ring').style.setProperty('--deg',(pct*360)+'deg');
+  document.getElementById('doneCount').textContent=doneCount(d)+'/'+ACTIVITIES[viewing].length;
+  const st=document.getElementById('status'); st.className='status '+(pts>=100?'green':pts>=60?'yellow':'red'); st.textContent=pts>=100?'Verde · Meta cumplida':pts>=60?'Amarillo · Buen avance':'Rojo · Acelera';
+}
+function renderKPIs(){
+  const d=ensureDay(), wrap=document.getElementById('kpis'); wrap.innerHTML='';
+  KPI_FIELDS.forEach(([id,label])=>{
+    const box=document.createElement('div'); box.innerHTML=`<label>${label}</label><input type="number" min="0" value="${d.kpis[id]||''}">`;
+    const inp=box.querySelector('input'); inp.disabled=isReadonly(); inp.oninput=()=>{d.kpis[id]=Number(inp.value)||0; save(); renderQuarter(); renderAlerts();}
+    wrap.appendChild(box);
+  });
+}
+function renderPriorities(){
+  const d=ensureDay();
+  [0,1,2].forEach(i=>{const el=document.getElementById('prio'+i); el.value=d.priorities[i]||''; el.disabled=isReadonly(); el.oninput=()=>{d.priorities[i]=el.value; save();}});
+}
+function renderAlerts(){
+  const d=ensureDay(), pts=pointsFor(d), msgs=[];
+  if(pts<60) msgs.push('Todavía puedes rescatar el día: llamadas, seguimientos y CRM.');
+  if((d.kpis.llamadas||0)<15) msgs.push('Faltan llamadas para llegar al ritmo mínimo diario.');
+  if((d.kpis.citasRealizadas||0)>0 && (d.kpis.corridas||0)===0) msgs.push('Tuviste citas: conviene enviar corrida financiera.');
+  if(pts>=100) msgs.push('Meta diaria cumplida. Excelente ejecución.');
+  document.getElementById('alerts').innerHTML=msgs.map(m=>`<div class="coach-item">${m}</div>`).join('');
+}
+function renderOrigins(){
+  const d=ensureDay(); d.origins=d.origins||{};
+  const table=document.getElementById('origins');
+  table.innerHTML='<tr><th>Origen</th>'+ORIGIN_FIELDS.map(f=>`<th>${f}</th>`).join('')+'</tr>';
+  ORIGINS.forEach(o=>{
+    d.origins[o]=d.origins[o]||{};
+    const tr=document.createElement('tr'); tr.innerHTML=`<td><b>${o}</b></td>`+ORIGIN_FIELDS.map(f=>`<td><input type="number" min="0" value="${d.origins[o][f]||''}"></td>`).join('');
+    [...tr.querySelectorAll('input')].forEach((inp,i)=>{inp.disabled=isReadonly();inp.oninput=()=>{d.origins[o][ORIGIN_FIELDS[i]]=Number(inp.value)||0; save(); renderQuarter();}});
+    table.appendChild(tr);
+  });
+}
+function qKeys(){const y=new Date().getFullYear(); const start=new Date(y,6,1), end=new Date(y,8,30); const keys=[]; for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){if(d.getDay()>=1&&d.getDay()<=5) keys.push(todayKey(d));} return keys;}
+function renderQuarter(){
+  const keys=qKeys(), total=keys.reduce((s,k)=>s+pointsFor(state.days[k]||{acts:{},counts:{}}),0), days=keys.filter(k=>state.days[k]).length||1;
+  document.getElementById('qPoints').textContent=total; document.getElementById('qAvg').textContent=Math.round(total/days);
+  document.getElementById('qStreak').textContent=computeStreak();
+  const amount=Number(state.sales?.amount||0), pct=Math.min(amount/Q_GOAL*100,100);
+  const sales=document.getElementById('salesAmount'); sales.value=amount||''; sales.disabled=isReadonly(); sales.oninput=()=>{state.sales.amount=Number(sales.value)||0; save(); renderQuarter();}
+  document.getElementById('salesBar').style.width=pct+'%'; document.getElementById('salesText').textContent=`${pct.toFixed(1)}% cumplido · Restan ${money(Math.max(Q_GOAL-amount,0))}`;
+  const sum={}; KPI_FIELDS.forEach(([id])=>sum[id]=0); keys.forEach(k=>{const kp=state.days[k]?.kpis||{}; KPI_FIELDS.forEach(([id])=>sum[id]+=kp[id]||0)});
+  document.getElementById('summaryStats').innerHTML=KPI_FIELDS.map(([id,l])=>`<div class="stat"><div class="n">${id==='ventas'?sum[id]:sum[id]}</div><div class="l">${l}</div></div>`).join('');
+}
+function computeStreak(){let streak=0,d=new Date(); if(pointsFor(state.days[todayKey(d)]||{acts:{},counts:{}})<100)d.setDate(d.getDate()-1); while(pointsFor(state.days[todayKey(d)]||{acts:{},counts:{}})>=100){streak++;d.setDate(d.getDate()-1); if(streak>365)break;} return streak;}
+function renderCalendar(){
+  const cal=document.getElementById('calendar'); cal.innerHTML='<div></div>'+CAL_DAYS.map(d=>`<b>${d}</b>`).join('');
+  CAL_TIMES.forEach((t,r)=>{cal.innerHTML+=`<div>${t}</div>`; CAL_DAYS.forEach((d,c)=>{const key=r+'-'+c; const sel=document.createElement('select'); CAL_OPTIONS.forEach(o=>sel.add(new Option(o||'—',o))); sel.value=state.calendar[key]||''; sel.disabled=isReadonly(); sel.onchange=()=>{state.calendar[key]=sel.value; save();}; cal.appendChild(sel);});});
+}
+function renderCoaching(){
+  const list=document.getElementById('coachList'); const notes=state.coaching||[];
+  list.innerHTML=notes.length?notes.slice().reverse().map(n=>`<div class="coach-item">${n.text}<div class="meta">${new Date(n.date).toLocaleString('es-MX')}</div></div>`).join(''):'<p style="color:var(--muted)">Sin comentarios todavía.</p>';
+  document.getElementById('coachFormCard').classList.toggle('hidden',myRole!=='karime'||viewing!=='alan');
+}
+document.getElementById('addCoach').onclick=()=>{const t=document.getElementById('coachText').value.trim(); if(!t)return; state.coaching=state.coaching||[]; state.coaching.push({text:t,date:new Date().toISOString()}); document.getElementById('coachText').value=''; save(); renderCoaching(); toast('Comentario agregado.');}
+
+(async()=>{
+  const {data}=await sb.auth.getSession();
+  if(data.session) initApp(data.session).catch(e=>{document.getElementById('loginError').textContent=e.message;document.getElementById('loginError').classList.remove('hidden')});
+})();
+</script>
+</body>
+</html>
